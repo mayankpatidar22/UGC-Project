@@ -1,0 +1,417 @@
+import { useState } from "react";
+import Title from "../components/Title";
+import UploadZone from "./UploadZone";
+import {
+    Loader2Icon,
+    RectangleHorizontalIcon,
+    RectangleVerticalIcon,
+    Wand2Icon,
+} from "lucide-react";
+import { PrimaryButton } from "../components/Buttons";
+import { useAuth, useUser } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import api from "../configs/axios";
+
+const Genetator = () => {
+    const { user } = useUser();
+    const { getToken } = useAuth();
+    const navigate = useNavigate();
+
+    const [name, setName] = useState("");
+    const [productName, setProductName] = useState("");
+    const [productDescription, setProductDescription] = useState("");
+    const [aspectRatio, setAspectRatio] = useState("9:16");
+    const [productImage, setProductImage] = useState<File | null>(null);
+    const [modelImage, setModelImage] = useState<File | null>(null);
+    const [userPrompt, setUserPrompt] = useState("");
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const handleFileChange = (
+        e: React.ChangeEvent<HTMLInputElement>,
+        type: "product" | "model"
+    ) => {
+        if (e.target.files && e.target.files[0]) {
+            if (type === "product") {
+                setProductImage(e.target.files[0]);
+            } else {
+                setModelImage(e.target.files[0]);
+            }
+        }
+    };
+
+    const handleGenerate = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        if (!user) {
+            return toast("Please login to generate");
+        }
+
+        if (
+            !productImage ||
+            !modelImage ||
+            !name ||
+            !productName ||
+            !aspectRatio
+        ) {
+            return toast.error("Please fill all the required fields");
+        }
+
+        try {
+            setIsGenerating(true);
+
+            const formData = new FormData();
+
+            formData.append("name", name);
+            formData.append("productName", productName);
+            formData.append("productDescription", productDescription);
+            formData.append("userPrompt", userPrompt);
+            formData.append("aspectRatio", aspectRatio);
+            formData.append("Image", productImage);
+            formData.append("Image", modelImage);
+
+            const token = await getToken();
+
+            const { data } = await api.post(
+                "/api/project/create",
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            toast.success(data.message);
+
+            navigate("/result/" + data.projectId);
+        } catch (error: any) {
+            setIsGenerating(false);
+
+            toast.error(
+                error?.response?.data?.message || error.message
+            );
+        }
+    };
+
+    return (
+        <div
+            className="
+                min-h-screen
+                px-6 py-12 md:p-12
+                mt-28
+                bg-white
+                text-slate-900
+                dark:bg-transparent
+                dark:text-white
+                transition-colors duration-300
+            "
+        >
+            <form
+                onSubmit={handleGenerate}
+                className="max-w-4xl mx-auto mb-40"
+            >
+                <Title
+                    heading="Create In-Context Image"
+                    description="Upload your model and product images to generate stunning UGC, short-form videos and social media posts"
+                />
+
+                <div className="flex gap-20 max-sm:flex-col items-start justify-between">
+
+                    {/* LEFT COLUMN */}
+                    <div className="flex flex-col w-full sm:max-w-60 gap-8 mt-8 mb-12">
+
+                        <UploadZone
+                            label="Product Image"
+                            file={productImage}
+                            onClear={() => setProductImage(null)}
+                            onChange={(e) =>
+                                handleFileChange(e, "product")
+                            }
+                        />
+
+                        <UploadZone
+                            label="Model Image"
+                            file={modelImage}
+                            onClear={() => setModelImage(null)}
+                            onChange={(e) =>
+                                handleFileChange(e, "model")
+                            }
+                        />
+
+                    </div>
+
+                    {/* RIGHT COLUMN */}
+                    <div className="w-full">
+
+                        {/* Project Name */}
+                        <div className="mb-4">
+                            <label
+                                htmlFor="name"
+                                className="
+                                    block text-sm mb-4
+                                    text-slate-700
+                                    dark:text-gray-300
+                                "
+                            >
+                                Project Name
+                            </label>
+
+                            <input
+                                type="text"
+                                id="name"
+                                value={name}
+                                onChange={(e) =>
+                                    setName(e.target.value)
+                                }
+                                placeholder="Name your project"
+                                required
+                                className="
+                                    w-full rounded-lg border-2 p-4 text-sm
+                                    bg-white
+                                    border-slate-300
+                                    text-slate-900
+                                    placeholder:text-slate-400
+
+                                    dark:bg-white/5
+                                    dark:border-violet-200/10
+                                    dark:text-white
+                                    dark:placeholder:text-gray-500
+
+                                    focus:border-violet-500
+                                    outline-none
+                                    transition-all
+                                "
+                            />
+                        </div>
+
+                        {/* Product Name */}
+                        <div className="mb-4">
+                            <label
+                                htmlFor="productName"
+                                className="
+                                    block text-sm mb-4
+                                    text-slate-700
+                                    dark:text-gray-300
+                                "
+                            >
+                                Product Name
+                            </label>
+
+                            <input
+                                type="text"
+                                id="productName"
+                                value={productName}
+                                onChange={(e) =>
+                                    setProductName(e.target.value)
+                                }
+                                placeholder="Enter the name of the product"
+                                required
+                                className="
+                                    w-full rounded-lg border-2 p-4 text-sm
+                                    bg-white
+                                    border-slate-300
+                                    text-slate-900
+                                    placeholder:text-slate-400
+
+                                    dark:bg-white/5
+                                    dark:border-violet-200/10
+                                    dark:text-white
+                                    dark:placeholder:text-gray-500
+
+                                    focus:border-violet-500
+                                    outline-none
+                                    transition-all
+                                "
+                            />
+                        </div>
+
+                        {/* Product Description */}
+                        <div className="mb-4">
+                            <label
+                                htmlFor="productDescription"
+                                className="
+                                    block text-sm mb-4
+                                    text-slate-700
+                                    dark:text-gray-300
+                                "
+                            >
+                                Product Description{" "}
+                                <span className="text-xs text-violet-500 dark:text-violet-400">
+                                    (optional)
+                                </span>
+                            </label>
+
+                            <textarea
+                                id="productDescription"
+                                rows={4}
+                                value={productDescription}
+                                onChange={(e) =>
+                                    setProductDescription(e.target.value)
+                                }
+                                placeholder="Enter the description of the product"
+                                className="
+                                    w-full rounded-lg border-2 p-4 text-sm
+                                    bg-white
+                                    border-slate-300
+                                    text-slate-900
+                                    placeholder:text-slate-400
+
+                                    dark:bg-white/5
+                                    dark:border-violet-200/10
+                                    dark:text-white
+                                    dark:placeholder:text-gray-500
+
+                                    focus:border-violet-500
+                                    outline-none
+                                    resize-none
+                                    transition-all
+                                "
+                            />
+                        </div>
+
+                        {/* Aspect Ratio */}
+                        <div className="mb-4">
+                            <label
+                                className="
+                                    block text-sm mb-4
+                                    text-slate-700
+                                    dark:text-gray-300
+                                "
+                            >
+                                Aspect Ratio
+                            </label>
+
+                            <div className="flex gap-3">
+
+                                <RectangleVerticalIcon
+                                    onClick={() =>
+                                        setAspectRatio("9:16")
+                                    }
+                                    className={`
+                                        p-2.5 size-13 rounded
+                                        cursor-pointer
+                                        transition-all
+                                        ring-2 ring-transparent
+
+                                        bg-slate-100
+                                        text-slate-700
+                                        hover:bg-slate-200
+
+                                        dark:bg-white/6
+                                        dark:text-white
+                                        dark:hover:bg-white/10
+
+                                        ${
+                                            aspectRatio === "9:16"
+                                                ? "ring-violet-500/50 bg-violet-100 dark:bg-white/10"
+                                                : ""
+                                        }
+                                    `}
+                                />
+
+                                <RectangleHorizontalIcon
+                                    onClick={() =>
+                                        setAspectRatio("16:9")
+                                    }
+                                    className={`
+                                        p-2.5 size-13 rounded
+                                        cursor-pointer
+                                        transition-all
+                                        ring-2 ring-transparent
+
+                                        bg-slate-100
+                                        text-slate-700
+                                        hover:bg-slate-200
+
+                                        dark:bg-white/6
+                                        dark:text-white
+                                        dark:hover:bg-white/10
+
+                                        ${
+                                            aspectRatio === "16:9"
+                                                ? "ring-violet-500/50 bg-violet-100 dark:bg-white/10"
+                                                : ""
+                                        }
+                                    `}
+                                />
+
+                            </div>
+                        </div>
+
+                        {/* User Prompt */}
+                        <div className="mb-4">
+                            <label
+                                htmlFor="userPrompt"
+                                className="
+                                    block text-sm mb-4
+                                    text-slate-700
+                                    dark:text-gray-300
+                                "
+                            >
+                                User Prompt{" "}
+                                <span className="text-xs text-violet-500 dark:text-violet-400">
+                                    (optional)
+                                </span>
+                            </label>
+
+                            <textarea
+                                id="userPrompt"
+                                rows={4}
+                                value={userPrompt}
+                                onChange={(e) =>
+                                    setUserPrompt(e.target.value)
+                                }
+                                placeholder="Describe how you want the narration to be."
+                                className="
+                                    w-full rounded-lg border-2 p-4 text-sm
+                                    bg-white
+                                    border-slate-300
+                                    text-slate-900
+                                    placeholder:text-slate-400
+
+                                    dark:bg-white/5
+                                    dark:border-violet-200/10
+                                    dark:text-white
+                                    dark:placeholder:text-gray-500
+
+                                    focus:border-violet-500
+                                    outline-none
+                                    resize-none
+                                    transition-all
+                                "
+                            />
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* Generate Button */}
+                <div className="flex justify-center mt-10">
+                    <PrimaryButton
+                        disabled={isGenerating}
+                        className="
+                            px-10 py-3 rounded-md
+                            disabled:opacity-70
+                            disabled:cursor-not-allowed
+                        "
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2Icon className="size-5 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <Wand2Icon className="size-5" />
+                                Generate Content
+                            </>
+                        )}
+                    </PrimaryButton>
+                </div>
+            </form>
+        </div>
+    );
+};
+
+export default Genetator;
