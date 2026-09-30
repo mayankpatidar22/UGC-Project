@@ -6,10 +6,10 @@ import { GhostButton, PrimaryButton } from "./Buttons";
 
 
 
-const ProjectCard = ({ gen, setGenerations, forCommunity = false }:
+const ProjectCard = ({ gen, forCommunity = false }:
     {
-        gen: Project, setGenerations: React.Dispatch<React.SetStateAction<Project[]>>,
-        forCommunity: boolean
+        gen: Project,
+        forCommunity?: boolean
     }) => {
 
     const navigate = useNavigate();

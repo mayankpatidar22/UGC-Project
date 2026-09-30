@@ -36,7 +36,7 @@ const MyGeneration = () => {
         {/* Generations list */}
         <div className="columns-1 sm:columns-2 lg:columns-3 gap-4">
           {generations.map((gen) => (
-            <ProjectCard key={gen.id} gen={gen} setGenerations={setGenerations} forCommunity={false}/>
+            <ProjectCard key={gen.id} gen={gen} forCommunity={false}/>
           ))}
         </div>
         {generations.length === 0 && (
